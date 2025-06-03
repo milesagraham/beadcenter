@@ -155,13 +155,6 @@ def refine_and_save_fiducials(fid_path, stack_path, output_suffix, patch_size, b
                     x_min += shrink_px
                     y_min += shrink_px
 
-                original_patch, x_min, y_min, _ = extract_subregion(stack_path, (x, y, z), size=patch_size)
-
-                scale_factor = updated_patch_size / patch_size
-                rescaled_cx = cx / scale_factor
-                rescaled_cy = cy / scale_factor
-
-                matplotlib_diagnostics(original_patch, rescaled_cx, rescaled_cy)
                 matplotlib_diagnostics(patch, cx, cy)
 
                 refined_x = x_min + cx
