@@ -1,4 +1,5 @@
 import os
+import glob
 import mrcfile
 import pandas as pd
 
@@ -155,7 +156,7 @@ def refine_and_save_fiducials(fid_path, stack_path, output_suffix, patch_size, b
                     x_min += shrink_px
                     y_min += shrink_px
 
-                matplotlib_diagnostics(patch, cx, cy)
+                # matplotlib_diagnostics(patch, cx, cy)
 
                 refined_x = x_min + cx
                 refined_y = y_min + cy
@@ -189,10 +190,23 @@ PATCH_SIZE = 80
 OUTPUT_SUFFIX = "_refined"
 
 if __name__ == "__main__":
-    refine_and_save_fiducials(
-        fid_path="map1ts1_ts_007_unsorted.fid",
-        stack_path="map1ts1_ts_007_unsorted_preali.mrc",
-        output_suffix=OUTPUT_SUFFIX,
-        patch_size=PATCH_SIZE,
-        blur_sigma=BLUR_SIGMA,
-    )
+    for fid_path in glob.glob("*/*.fid", recursive=True):
+        base, _ = os.path.splitext(fid_path)
+        stack_path = base + "_preali.mrc"
+
+        refine_and_save_fiducials(
+            fid_path=fid_path,
+            stack_path=stack_path,
+            output_suffix=OUTPUT_SUFFIX,
+            patch_size=PATCH_SIZE,
+            blur_sigma=BLUR_SIGMA,
+        )
+
+# if __name__ == "__main__":
+#     refine_and_save_fiducials(
+#         fid_path="map1ts1_ts_007_unsorted.fid",
+#         stack_path="map1ts1_ts_007_unsorted_preali.mrc",
+#         output_suffix=OUTPUT_SUFFIX,
+#         patch_size=PATCH_SIZE,
+#         blur_sigma=BLUR_SIGMA,
+#     )
