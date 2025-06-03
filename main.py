@@ -149,7 +149,7 @@ def refine_and_save_fiducials(fid_path, stack_path, output_suffix, patch_size, b
                 # write_patch_to_mrc(filtered, "test_patch_filtered.mrc")
                 cx, cy, updated_patch_size, patch = detect_blob_center(filtered)
 
-                if updated_patch_size == patch_size:
+                if updated_patch_size != patch_size:
                     print(f"Patch size has been updated to {updated_patch_size}. Scaling coordinates appropriately")
                     shrink_px = (patch_size - updated_patch_size) // 2
                     x_min += shrink_px
