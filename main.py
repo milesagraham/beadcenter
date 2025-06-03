@@ -130,6 +130,11 @@ def write_patch_to_mrc(patch: np.ndarray, output_path: str):
         mrc.update_header_stats()
     print(f"Patch written to: {output_path}")
 
+def matplotlib_diagnostics(patch, cx, cy):
+    plt.imshow(patch, cmap='gray')
+    plt.scatter(cx, cy, color='red', marker='x')
+    plt.title("Detected Bead Center")
+    plt.show()
 
 def refine_and_save_fiducials(fid_path, stack_path, output_suffix, patch_size, blur_sigma):
     contour_groups = extract_fiducial_points(fid_path)
@@ -156,15 +161,8 @@ def refine_and_save_fiducials(fid_path, stack_path, output_suffix, patch_size, b
                 rescaled_cx = cx / scale_factor
                 rescaled_cy = cy / scale_factor
 
-                plt.imshow(original_patch, cmap='gray')
-                plt.scatter(rescaled_cx, rescaled_cy, color='red', marker='x')
-                plt.title("Detected Bead Center")
-                plt.show()
-
-                plt.imshow(patch, cmap='gray')
-                plt.scatter(cx, cy, color='red', marker='x')
-                plt.title("Detected Bead Center")
-                plt.show()
+                matplotlib_diagnostics(original_patch, rescaled_cx, rescaled_cy)
+                matplotlib_diagnostics(patch, cx, cy)
 
                 refined_x = x_min + cx
                 refined_y = y_min + cy
