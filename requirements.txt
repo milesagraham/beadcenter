@@ -4,3 +4,4 @@ scipy
 imodmodel
 pandas
 scikit-image
+matplotlib
