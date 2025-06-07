@@ -18,7 +18,7 @@ import matplotlib
 matplotlib.use('TkAgg')  # Or 'QtAgg' if you have Qt installed
 import matplotlib.pyplot as plt
 
-# === ✅ CONFIGURATION ===
+# ===CONFIGURATION ===
 
 BLUR_SIGMA = 5
 PATCH_SIZE = 80
