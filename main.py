@@ -13,17 +13,31 @@ from typing import Tuple
 import imodmodel
 from pydantic import BaseModel
 
-
 import matplotlib
+
 matplotlib.use('TkAgg')  # Or 'QtAgg' if you have Qt installed
 import matplotlib.pyplot as plt
 
+# === ✅ CONFIGURATION ===
+
+BLUR_SIGMA = 5
+PATCH_SIZE = 80
+OUTPUT_SUFFIX = "_refined"
 
 class Coord(BaseModel):
     center: Tuple[float, float, float]
 
 
 def extract_fiducial_points(fid_path):
+    """
+    Reads the existing mod file and returns a dataframe with points grouped by contour
+
+    Parameters:
+        the .fid file from IMOD to be read
+
+    Returns:
+        Dataframe with the .fid file information.
+    """
     df = imodmodel.read(fid_path)
     grouped = []
 
@@ -38,7 +52,15 @@ def extract_fiducial_points(fid_path):
 
 def extract_subregion(stack_path, coord, size):
     """
-    Extracts a square subregion of given size around a 3D coordinate (x, y, z).
+    Extracts a patch from the image stack around each coordinate.
+
+    Parameters:
+        stack_path : Input image stack.
+        coord: the existing coordinate from the mod file
+        size: the size of 2D image to extract in which to search for the bead center
+
+    Returns:
+        A 2d image patch and the xyz information of the 2d image patch.
     """
     x, y, z = coord
     x, y, z = int(round(x)), int(round(y)), int(round(z))
@@ -77,6 +99,15 @@ def apply_gaussian_smoothing(image: np.ndarray, sigma: float) -> np.ndarray:
 
 
 def mask_beads(patch):
+    """
+    Creates a binary mask for the gold bead using automatic thresholding
+
+    Parameters:
+        image (np.ndarray): Input 2D image.
+
+    Returns:
+        np.ndarray: Mask.
+    """
     thresh_val = threshold_otsu(patch)
     higher_than_threshold = patch > thresh_val
     lower_than_threshold = patch < thresh_val
@@ -89,7 +120,13 @@ def mask_beads(patch):
 
 def shrink_patch_size(patch):
     """
-    Shrinks a square patch by 5% on each side and returns the cropped patch and new size.
+    If multiple beads are detected in the image, then the patch size is shrunk until only one remains.
+
+    Parameters:
+        image (np.ndarray): Input 2D image.
+
+    Returns:
+        np.ndarray: cropped patch and it's shape
     """
     size = patch.shape[0]
     crop = int(size * 0.05 / 2)  # 2.5% from each side
@@ -103,6 +140,16 @@ def shrink_patch_size(patch):
 
 
 def detect_blob_center(patch):
+    """
+    Finds the center of the gold bead from the input mask.
+
+    Parameters:
+        image (np.ndarray): Input 2D mask.
+
+    Returns:
+        np.ndarray: coordinates of the new center
+        updated patch size and patch for diagnostic use.
+    """
     patch_size = patch.shape[0]
     mask = mask_beads(patch)
     # Label connected components
@@ -124,21 +171,22 @@ def detect_blob_center(patch):
 
     return cx, cy, patch_size, patch
 
-
-def write_patch_to_mrc(patch: np.ndarray, output_path: str):
-    with mrcfile.new(output_path, overwrite=True) as mrc:
-        # Expand to 3D shape (1, height, width) so it's a proper stack
-        mrc.set_data(patch[np.newaxis, ...].astype(np.float32))
-        mrc.update_header_stats()
-    print(f"Patch written to: {output_path}")
-
 def matplotlib_diagnostics(patch, cx, cy):
+
+    """
+    Plotting function for diagnostic purposes
+    """
     plt.imshow(patch, cmap='gray')
     plt.scatter(cx, cy, color='red', marker='x')
     plt.title("Detected Bead Center")
     plt.show()
 
+
 def refine_and_save_fiducials(fid_path, stack_path, output_suffix, patch_size, blur_sigma):
+    """
+    Runs the required image processing and centering functions and converts the output back into full image dimension coordinates.
+    The new coordinates are then saved into a new .fid file as an open contour.
+    """
     contour_groups = extract_fiducial_points(fid_path)
     refined_rows = []
 
@@ -148,7 +196,6 @@ def refine_and_save_fiducials(fid_path, stack_path, output_suffix, patch_size, b
             try:
                 patch, x_min, y_min, _ = extract_subregion(stack_path, (x, y, z), size=patch_size)
                 filtered = apply_gaussian_smoothing(patch, blur_sigma)
-                # write_patch_to_mrc(filtered, "test_patch_filtered.mrc")
                 cx, cy, updated_patch_size, patch = detect_blob_center(filtered)
 
                 if updated_patch_size != patch_size:
@@ -183,12 +230,6 @@ def refine_and_save_fiducials(fid_path, stack_path, output_suffix, patch_size, b
     imodmodel.write(refined_df, new_path, type=ContourType.OPEN)
     print(f"✅ Saved refined model to: {new_path}")
 
-# === ✅ CONFIGURATION ===
-
-BLUR_SIGMA = 5
-PATCH_SIZE = 80
-OUTPUT_SUFFIX = "_refined"
-
 if __name__ == "__main__":
     for fid_path in glob.glob("*/*.fid", recursive=True):
         base, _ = os.path.splitext(fid_path)
@@ -201,12 +242,3 @@ if __name__ == "__main__":
             patch_size=PATCH_SIZE,
             blur_sigma=BLUR_SIGMA,
         )
-
-# if __name__ == "__main__":
-#     refine_and_save_fiducials(
-#         fid_path="map1ts1_ts_007_unsorted.fid",
-#         stack_path="map1ts1_ts_007_unsorted_preali.mrc",
-#         output_suffix=OUTPUT_SUFFIX,
-#         patch_size=PATCH_SIZE,
-#         blur_sigma=BLUR_SIGMA,
-#     )
