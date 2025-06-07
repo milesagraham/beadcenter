@@ -212,6 +212,8 @@ def refine_and_save_fiducials(fid_path, stack_path, backup_suffix, patch_size, b
                 new_row = row.copy()
                 new_row["x"] = refined_x
                 new_row["y"] = refined_y
+                assert "object_id" in new_row
+                assert "contour_id" in new_row
                 refined_rows.append(new_row)
 
                 print(f"Original: x={x:.2f}, y={y:.2f}, z={z}")
@@ -234,6 +236,10 @@ def refine_and_save_fiducials(fid_path, stack_path, backup_suffix, patch_size, b
 
 if __name__ == "__main__":
     for fid_path in glob.glob("*/*.fid", recursive=True):
+        base, _ = os.path.splitext(fid_path)
+        stack_path = base + "_preali.mrc"
+        if fid_path.endswith(f"{BACKUP_SUFFIX}.fid"):
+            continue  # Skip backup files
         base, _ = os.path.splitext(fid_path)
         stack_path = base + "_preali.mrc"
 
