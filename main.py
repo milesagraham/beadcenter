@@ -4,6 +4,7 @@ import mrcfile
 import pandas as pd
 
 import numpy as np
+from imodmodel.models import ContourType
 from scipy.ndimage import label, center_of_mass, gaussian_filter
 from skimage.morphology import remove_small_objects
 from skimage.filters import threshold_otsu
@@ -179,9 +180,8 @@ def refine_and_save_fiducials(fid_path, stack_path, output_suffix, patch_size, b
     refined_df = pd.DataFrame(refined_rows)
     base, ext = os.path.splitext(fid_path)
     new_path = base + output_suffix + ext
-    imodmodel.write(refined_df, new_path)
+    imodmodel.write(refined_df, new_path, type=ContourType.OPEN)
     print(f"✅ Saved refined model to: {new_path}")
-
 
 # === ✅ CONFIGURATION ===
 
