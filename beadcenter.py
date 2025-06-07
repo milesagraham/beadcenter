@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 
 BLUR_SIGMA = 5
 PATCH_SIZE = 80
-OUTPUT_SUFFIX = "_refined"
+BACKUP_SUFFIX = "_backup"
 
 class Coord(BaseModel):
     center: Tuple[float, float, float]
@@ -182,7 +182,7 @@ def matplotlib_diagnostics(patch, cx, cy):
     plt.show()
 
 
-def refine_and_save_fiducials(fid_path, stack_path, output_suffix, patch_size, blur_sigma):
+def refine_and_save_fiducials(fid_path, stack_path, backup_suffix, patch_size, blur_sigma):
     """
     Runs the required image processing and centering functions and converts the output back into full image dimension coordinates.
     The new coordinates are then saved into a new .fid file as an open contour.
@@ -226,9 +226,11 @@ def refine_and_save_fiducials(fid_path, stack_path, output_suffix, patch_size, b
     # Save to new file
     refined_df = pd.DataFrame(refined_rows)
     base, ext = os.path.splitext(fid_path)
-    new_path = base + output_suffix + ext
-    imodmodel.write(refined_df, new_path, type=ContourType.OPEN)
-    print(f"✅ Saved refined model to: {new_path}")
+    backup_fid_path = base + backup_suffix + ext
+    os.rename(fid_path, backup_fid_path)
+    output_path = base + ext
+    imodmodel.write(refined_df, output_path, type=ContourType.OPEN)
+    print(f"✅ Saved refined model to: {output_path}")
 
 if __name__ == "__main__":
     for fid_path in glob.glob("*/*.fid", recursive=True):
@@ -238,7 +240,7 @@ if __name__ == "__main__":
         refine_and_save_fiducials(
             fid_path=fid_path,
             stack_path=stack_path,
-            output_suffix=OUTPUT_SUFFIX,
+            backup_suffix=BACKUP_SUFFIX,
             patch_size=PATCH_SIZE,
             blur_sigma=BLUR_SIGMA,
         )
